@@ -2,6 +2,13 @@
 - hosts: app01
   become: true
   tasks:
+    - name: upgrade all apt packages
+      apt: upgrade=dist force_apt_get=yes
+
+
+    - name: update apt repo and cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+
     - name: install web components
       apt: name={{item}} state=present update_cache=yes
       with_items:
@@ -10,20 +17,20 @@
         - python3-pip
         - python3-virtualenv
     
-    - name: ensure apache2 started
-      service: name=apache2 state=started enabled=yes
+    # - name: ensure apache2 started
+    #   service: name=apache2 state=started enabled=yes
 
-    - name: ensure mod_wsgi enabled
-      apache2_module: state=present name=wsgi
-      notify: restart apache2
-      
-    - name: copy demo app source
-      copy: src=demo/app/ dest=/var/www/demo mode=0755
-      notify: restart apache2
+    # - name: ensure mod_wsgi enabled
+    #   apache2_module: state=present name=wsgi
+    #   notify: restart apache2
 
-    - name: copy apache virtual host config 
-      copy: src=demo/demo.conf dest=/etc/apache2/sites-available mode=0755
-      notify: restart apache2
+    # - name: copy demo app source
+    #   copy: src=demo/app/ dest=/var/www/demo mode=0755
+    #   notify: restart apache2
+
+    # - name: copy apache virtual host config 
+    #   copy: src=demo/demo.conf dest=/etc/apache2/sites-available mode=0755
+    #   notify: restart apache2
 
 
 - hosts: app02
@@ -52,6 +59,9 @@
       copy: src=demo/demo.conf dest=/etc/apache2/sites-available mode=0755
       notify: restart apache2
 
+    - name: setup python virtualenv
+      pip: requirements=/var/www/demo/requirements.txt virtualenv=/var/www/demo/.venv
+      notify: restart apache2
   handlers:
     - name: restart apache2
       service: name=apache2 state=restarted
